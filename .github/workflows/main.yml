@@ -23,8 +23,13 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Set up Gradle
+      - name: Set up Gradle 9.7.0
         uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: 9.7.0
+
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 9.7.0 --distribution-type bin
 
       - name: Grant execute permission
         run: chmod +x gradlew
