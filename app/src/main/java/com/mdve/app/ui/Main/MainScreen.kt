@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,7 +39,8 @@ import com.mdve.app.ui.theme.TextSecondary
 fun MainScreen(
     onImport: () -> Unit,
     documents: List<DocumentItem> = emptyList(),
-    onDocumentClick: (DocumentItem) -> Unit = {}
+    onDocumentClick: (DocumentItem) -> Unit = {},
+    onDocumentDelete: (DocumentItem) -> Unit = {}
 ) {
     Scaffold(
         containerColor = AppBackground,
@@ -120,8 +120,7 @@ fun MainScreen(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = OctoRed,
-                    modifier = Modifier
-                        .padding(4.dp)
+                    modifier = Modifier.padding(4.dp)
                 )
             }
 
@@ -153,6 +152,9 @@ fun MainScreen(
                             document = document,
                             onClick = {
                                 onDocumentClick(document)
+                            },
+                            onDelete = {
+                                onDocumentDelete(document)
                             }
                         )
                     }
