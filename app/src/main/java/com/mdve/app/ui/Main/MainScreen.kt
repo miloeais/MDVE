@@ -1,7 +1,6 @@
 
 package com.mdve.app.ui.main
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,19 +16,18 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mdve.app.data.model.DocumentItem
 import com.mdve.app.ui.theme.AppBackground
 import com.mdve.app.ui.theme.BorderLight
 import com.mdve.app.ui.theme.OctoRed
@@ -40,7 +38,9 @@ import com.mdve.app.ui.theme.TextSecondary
 
 @Composable
 fun MainScreen(
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    documents: List<DocumentItem> = emptyList(),
+    onDocumentClick: (DocumentItem) -> Unit = {}
 ) {
     Scaffold(
         containerColor = AppBackground,
@@ -58,7 +58,6 @@ fun MainScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp)
         ) {
-
             Spacer(modifier = Modifier.height(22.dp))
 
             Row(
@@ -110,7 +109,7 @@ fun MainScreen(
                     )
 
                     Text(
-                        text = "Your Markdown files",
+                        text = "${documents.size} documents",
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -122,28 +121,42 @@ fun MainScreen(
                     fontWeight = FontWeight.Bold,
                     color = OctoRed,
                     modifier = Modifier
-                        .background(
-                            OctoRed.copy(alpha = 0.10f),
-                            RoundedCornerShape(8.dp)
-                        )
-                        .padding(
-                            horizontal = 12.dp,
-                            vertical = 7.dp
-                        )
+                        .padding(4.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                EmptyDocumentState(
-                    onImport = onImport
-                )
+            if (documents.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EmptyDocumentState(onImport)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = documents,
+                        key = { it.id }
+                    ) { document ->
+                        DocumentCard(
+                            document = document,
+                            onClick = {
+                                onDocumentClick(document)
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -158,7 +171,6 @@ private fun EmptyDocumentState(
         verticalArrangement = Arrangement.Center,
         modifier = Modifier.padding(bottom = 35.dp)
     ) {
-
         Surface(
             shape = CircleShape,
             color = OctoRed.copy(alpha = 0.08f),
