@@ -1,3 +1,4 @@
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -10,10 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "com.mdve.app"
-
         minSdk = 26
         targetSdk = 36
-
         versionCode = 1
         versionName = "1.0"
     }
@@ -26,13 +25,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(
-                org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-            )
-        }
+kotlin {
+    compilerOptions {
+        jvmTarget.set(
+            org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        )
     }
 }
 
@@ -48,12 +47,12 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
 
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
-
-    debugImplementation(
-        "androidx.compose.ui:ui-tooling"
+    implementation(
+        "androidx.lifecycle:lifecycle-runtime-compose:2.11.0"
     )
+
+    debugImplementation("androidx.compose.ui:ui-tooling")
 }
