@@ -11,7 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import com.mdve.app.ui.theme.MDVETheme
 
 class MainActivity : ComponentActivity() {
 
@@ -19,10 +19,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MaterialTheme {
+            MDVETheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFFF7F7F7)
+                    color = MaterialTheme.colorScheme.background
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
                         Text(
                             text = "MDVE",
                             style = MaterialTheme.typography.headlineLarge,
-                            color = Color(0xFFCC0000)
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
