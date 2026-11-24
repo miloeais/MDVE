@@ -11,29 +11,39 @@ import java.util.UUID
 class DocumentImporter(context: Context) {
 
     private val appContext = context.applicationContext
-
     private val storage = DocumentStorage(appContext)
-
     private val repository = DocumentRepository(appContext)
 
-    fun importDocument(uri: Uri): DocumentItem {
+    fun importDocument(
+        uri: Uri,
+        permissionFlags: Int
+    ): DocumentItem {
+
+        val fileName = storage.getDisplayName(uri)
+        val extension = fileName.substringAfterLast(
+            ".",
+            ""
+        ).lowercase()
+
+        require(extension == "md" || extension == "markdown") {
+            "Only Markdown files are supported."
+        }
 
         storage.rememberPermission(
             uri,
-            Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            permissionFlags
         )
 
-        val name = storage.getDisplayName(uri)
-        val mimeType = storage.getMimeType(uri)
+        val existing = repository.getDocuments()
+            .find { it.uri == uri.toString() }
 
         val document = DocumentItem(
-            id = UUID.randomUUID().toString(),
-            name = name,
+            id = existing?.id ?: UUID.randomUUID().toString(),
+            name = fileName,
             uri = uri.toString(),
-            mimeType = mimeType,
+            mimeType = storage.getMimeType(uri),
             lastModified = System.currentTimeMillis(),
-            isFavorite = false
+            isFavorite = existing?.isFavorite ?: false
         )
 
         repository.addDocument(document)
