@@ -192,6 +192,13 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     selectedDocument = document
+                                },
+                                onDocumentDelete = { document ->
+                                    repository.removeDocument(document.id)
+
+                                    documents.removeAll {
+                                        it.id == document.id
+                                    }
                                 }
                             )
                         }
