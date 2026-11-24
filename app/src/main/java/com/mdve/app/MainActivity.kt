@@ -32,6 +32,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val incomingIntent = intent
+
         setContent {
             MDVETheme {
 
@@ -72,6 +74,55 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     documents.clear()
                     documents.addAll(repository.getDocuments())
+
+                    if (
+                        incomingIntent.action == Intent.ACTION_VIEW &&
+                        incomingIntent.data != null
+                    ) {
+                        val uri = incomingIntent.data!!
+
+                        val flags = incomingIntent.flags and (
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            )
+
+                        storage.rememberPermission(
+                            uri,
+                            flags
+                        )
+
+                        val document = runCatching {
+                            val existing = repository.getDocuments()
+                                .find { it.uri == uri.toString() }
+
+                            val newDocument = DocumentItem(
+                                id = existing?.id
+                                    ?: UUID.randomUUID().toString(),
+                                name = storage.getDisplayName(uri),
+                                uri = uri.toString(),
+                                mimeType = storage.getMimeType(uri),
+                                lastModified = System.currentTimeMillis(),
+                                isFavorite = existing?.isFavorite ?: false
+                            )
+
+                            repository.addDocument(newDocument)
+
+                            newDocument
+                        }.getOrNull()
+
+                        if (document != null) {
+                            documents.clear()
+                            documents.addAll(repository.getDocuments())
+
+                            viewerContent = runCatching {
+                                storage.readText(uri)
+                            }.getOrElse {
+                                "Unable to read this document."
+                            }
+
+                            selectedDocument = document
+                        }
+                    }
                 }
 
                 val importLauncher =
