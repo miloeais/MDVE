@@ -21,9 +21,11 @@ import com.mdve.app.data.model.DocumentItem
 import com.mdve.app.data.repository.DocumentRepository
 import com.mdve.app.data.storage.DocumentImporter
 import com.mdve.app.data.storage.DocumentStorage
+import com.mdve.app.ui.editor.EditorScreen
 import com.mdve.app.ui.main.MainScreen
 import com.mdve.app.ui.theme.MDVETheme
 import com.mdve.app.ui.viewer.ViewerScreen
+import java.util.UUID
 
 class MainActivity : ComponentActivity() {
 
@@ -59,11 +61,17 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf("")
                 }
 
+                var editorContent by remember {
+                    mutableStateOf("")
+                }
+
+                var isEditing by remember {
+                    mutableStateOf(false)
+                }
+
                 LaunchedEffect(Unit) {
                     documents.clear()
-                    documents.addAll(
-                        repository.getDocuments()
-                    )
+                    documents.addAll(repository.getDocuments())
                 }
 
                 val importLauncher =
@@ -96,67 +104,176 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                val saveAsLauncher =
+                    rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.StartActivityForResult()
+                    ) { result ->
+
+                        if (result.resultCode == RESULT_OK) {
+                            val uri = result.data?.data
+
+                            if (uri != null) {
+                                runCatching {
+                                    storage.writeText(
+                                        uri,
+                                        editorContent
+                                    )
+
+                                    val newDocument = DocumentItem(
+                                        id = UUID.randomUUID().toString(),
+                                        name = storage.getDisplayName(uri),
+                                        uri = uri.toString(),
+                                        mimeType = storage.getMimeType(uri),
+                                        lastModified = System.currentTimeMillis()
+                                    )
+
+                                    repository.addDocument(newDocument)
+
+                                    newDocument
+                                }.onSuccess { newDocument ->
+                                    documents.clear()
+                                    documents.addAll(
+                                        repository.getDocuments()
+                                    )
+
+                                    selectedDocument = newDocument
+                                    viewerContent = editorContent
+                                    isEditing = false
+                                }
+                            }
+                        }
+                    }
+
                 Surface(
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val currentDocument = selectedDocument
 
-                    if (currentDocument == null) {
-                        MainScreen(
-                            documents = documents,
-                            onImport = {
-                                val intent = Intent(
-                                    Intent.ACTION_OPEN_DOCUMENT
-                                ).apply {
-                                    addCategory(
-                                        Intent.CATEGORY_OPENABLE
-                                    )
-
-                                    type = "*/*"
-
-                                    putExtra(
-                                        Intent.EXTRA_MIME_TYPES,
-                                        arrayOf(
-                                            "text/markdown",
-                                            "text/x-markdown",
-                                            "text/plain",
-                                            "application/octet-stream"
+                    when {
+                        currentDocument == null -> {
+                            MainScreen(
+                                documents = documents,
+                                onImport = {
+                                    val intent = Intent(
+                                        Intent.ACTION_OPEN_DOCUMENT
+                                    ).apply {
+                                        addCategory(
+                                            Intent.CATEGORY_OPENABLE
                                         )
-                                    )
 
-                                    addFlags(
-                                        Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                                            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-                                    )
+                                        type = "*/*"
+
+                                        putExtra(
+                                            Intent.EXTRA_MIME_TYPES,
+                                            arrayOf(
+                                                "text/markdown",
+                                                "text/x-markdown",
+                                                "text/plain",
+                                                "application/octet-stream"
+                                            )
+                                        )
+
+                                        addFlags(
+                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                                                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                                        )
+                                    }
+
+                                    importLauncher.launch(intent)
+                                },
+                                onDocumentClick = { document ->
+                                    viewerContent = runCatching {
+                                        storage.readText(
+                                            Uri.parse(document.uri)
+                                        )
+                                    }.getOrElse {
+                                        "Unable to read this document."
+                                    }
+
+                                    selectedDocument = document
                                 }
+                            )
+                        }
 
-                                importLauncher.launch(intent)
-                            },
-                            onDocumentClick = { document ->
-                                viewerContent = runCatching {
-                                    storage.readText(
-                                        Uri.parse(document.uri)
-                                    )
-                                }.getOrElse {
-                                    "Unable to read this document."
+                        isEditing -> {
+                            EditorScreen(
+                                documentName = currentDocument.name,
+                                content = editorContent,
+                                onContentChange = {
+                                    editorContent = it
+                                },
+                                onBack = {
+                                    isEditing = false
+                                },
+                                onSave = {
+                                    runCatching {
+                                        storage.writeText(
+                                            Uri.parse(currentDocument.uri),
+                                            editorContent
+                                        )
+
+                                        val updatedDocument =
+                                            currentDocument.copy(
+                                                lastModified = System.currentTimeMillis()
+                                            )
+
+                                        repository.updateDocument(
+                                            updatedDocument
+                                        )
+
+                                        updatedDocument
+                                    }.onSuccess { updatedDocument ->
+                                        documents.clear()
+                                        documents.addAll(
+                                            repository.getDocuments()
+                                        )
+
+                                        selectedDocument = updatedDocument
+                                        viewerContent = editorContent
+                                        isEditing = false
+                                    }
+                                },
+                                onSaveAs = {
+                                    val intent = Intent(
+                                        Intent.ACTION_CREATE_DOCUMENT
+                                    ).apply {
+                                        addCategory(
+                                            Intent.CATEGORY_OPENABLE
+                                        )
+
+                                        type = "text/markdown"
+
+                                        putExtra(
+                                            Intent.EXTRA_TITLE,
+                                            currentDocument.name
+                                        )
+
+                                        addFlags(
+                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                        )
+                                    }
+
+                                    saveAsLauncher.launch(intent)
                                 }
+                            )
+                        }
 
-                                selectedDocument = document
-                            }
-                        )
-                    } else {
-                        ViewerScreen(
-                            document = currentDocument,
-                            content = viewerContent,
-                            onBack = {
-                                selectedDocument = null
-                                viewerContent = ""
-                            },
-                            onEdit = {
-                                // Editor navigation will be added later.
-                            }
-                        )
+                        else -> {
+                            ViewerScreen(
+                                document = currentDocument,
+                                content = viewerContent,
+                                onBack = {
+                                    selectedDocument = null
+                                    viewerContent = ""
+                                },
+                                onEdit = {
+                                    editorContent = viewerContent
+                                    isEditing = true
+                                }
+                            )
+                        }
                     }
                 }
             }
